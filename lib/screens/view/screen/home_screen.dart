@@ -1,19 +1,38 @@
-import 'package:browser_mirror_wall_app/screens/view/provider/home_provider.dart';
-import 'package:browser_mirror_wall_app/shr/shr_helper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:provider/provider.dart';
+import 'package:browser_mirror_wall_app/screens/view/provider/home_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  _HomePageState createState() => _HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   InAppWebViewController? webViewController;
+  PullToRefreshController? pullToRefreshController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    pullToRefreshController = PullToRefreshController(
+      onRefresh: () async {
+        if (webViewController != null) {
+          await webViewController!.reload();
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    pullToRefreshController!.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,18 +40,27 @@ class _HomePageState extends State<HomePage> {
     HomeProvider providerW = context.watch<HomeProvider>();
 
     return Scaffold(
+      backgroundColor: providerW.isDark ? Colors.black : Colors.white,
       appBar: AppBar(
+        elevation: 10,
+        backgroundColor: providerW.isDark ? Colors.black : Colors.white,
         centerTitle: true,
         title: const Text(
-          'My Browser',
+          'Browser',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blueAccent,
+            fontSize: 30,
+          ),
         ),
         actions: [
           Switch(
             value: providerW.isDark,
             onChanged: (value) {
-              webViewController?.setSettings(settings: InAppWebViewSettings());
               providerR.changeThemeMode(value);
             },
+            activeColor: Colors.amber,
+            inactiveThumbColor: Colors.lightGreen,
           ),
           PopupMenuButton(
             itemBuilder: (context) => [
@@ -69,8 +97,16 @@ class _HomePageState extends State<HomePage> {
                                 ElevatedButton(
                                   onPressed: () {
                                     providerR.clearSearchHistory();
-                                    Navigator.pop(context); // Close the modal
+                                    Navigator.pop(context);
                                   },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.redAccent,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 20),
+                                  ),
                                   child: const Text('Clear History'),
                                 ),
                             ],
@@ -80,10 +116,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                   );
                 },
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Icon(Icons.timer_sharp, color: Colors.grey),
+                    Icon(Icons.timer_sharp, color: Colors.grey[600]),
                     Text('Search History'),
                   ],
                 ),
@@ -106,16 +142,17 @@ class _HomePageState extends State<HomePage> {
                               const SizedBox(height: 10),
                               Expanded(
                                 child: ListView.builder(
-                                  itemCount: providerW.bookmarkList.length,
+                                  itemCount: providerW.bookmark.length,
                                   itemBuilder: (context, index) {
-                                    final bookmark =
-                                        providerW.bookmarkList[index];
                                     return ListTile(
-                                      title: Text(bookmark),
+                                      title: Text(providerW.bookmark[index]),
                                       trailing: IconButton(
                                         icon: const Icon(Icons.delete),
-                                        onPressed: () =>
-                                            providerR.removeBookmark(bookmark),
+                                        onPressed: () {
+                                          providerR.bookmark.removeAt(index);
+                                          providerR.shrHelper
+                                              .setBookmark(providerW.bookmark);
+                                        },
                                       ),
                                     );
                                   },
@@ -128,15 +165,14 @@ class _HomePageState extends State<HomePage> {
                     ),
                   );
                 },
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Icon(CupertinoIcons.bookmark_fill, color: Colors.grey),
+                    Icon(CupertinoIcons.bookmark_fill, color: Colors.grey[600]),
                     Text('All Bookmarks'),
                   ],
                 ),
               ),
-              // Search Engine Item
               PopupMenuItem(
                 onTap: () {
                   showDialog(
@@ -189,11 +225,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                   );
                 },
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Icon(Icons.screen_search_desktop_outlined,
-                        color: Colors.grey),
+                        color: Colors.grey[600]),
                     Text('Search Engine'),
                   ],
                 ),
@@ -202,71 +238,97 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // WebView displaying the webpage
-          Expanded(
-            flex: 8,
-            child: InAppWebView(
-              pullToRefreshController:
-                  providerW.pullToRefreshController, // Attach it here
-              onWebViewCreated: providerR.onWebViewCreated,
-              initialUrlRequest:
-                  URLRequest(url: WebUri.uri(Uri.parse(providerW.googleURL))),
-              onLoadStop: (controller, uri) {
-                providerR.onLoadStop(controller, uri);
-                providerW.pullToRefreshController.endRefreshing();
-              },
-              // onLoadStart: (controller, uri) {
-              //   providerW.pullToRefreshController?.beginRefreshing();
-              // },
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Expanded(
+              flex: 8,
+              child: InAppWebView(
+                pullToRefreshController: pullToRefreshController!,
+                onWebViewCreated: providerR.onWebViewCreated,
+                initialUrlRequest:
+                    URLRequest(url: WebUri.uri(Uri.parse(providerW.googleURL))),
+                onLoadStart: (controller, uri) {
+                  pullToRefreshController?.beginRefreshing();
+                },
+                onLoadStop: (controller, uri) {
+                  providerR.onLoadStop(controller, uri);
+                  pullToRefreshController!.endRefreshing();
+                },
+              ),
             ),
-          ),
-          // Navigation Controls (Back, Forward, Reload)
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: providerW.canBack ? providerR.back : null,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward),
-                  onPressed: providerW.canForward ? providerR.forward : null,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: providerR.reload,
-                ),
-                IconButton(
-                  onPressed: () {
-                    providerR.addBookmark(providerW.googleURL);
-                  },
-                  icon: const Icon(Icons.bookmark),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      size: 30,
+                    ),
+                    onPressed: providerW.canBack ? providerR.back : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_forward,
+                      size: 30,
+                    ),
+                    onPressed: providerW.canForward ? providerR.forward : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.refresh_outlined,
+                      size: 30,
+                    ),
+                    onPressed: providerR.reload,
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      String? currentUrl =
+                          await webViewController?.getUrl().toString();
+                      if (currentUrl != null) {
+                        providerR.saveBookmark(currentUrl);
+                      }
+                    },
+                    icon: const Icon(
+                      Icons.bookmark,
+                      size: 30,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // URL input field
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              onSubmitted: (val) {
-                providerR.textOnSubmitted(val);
-                providerR.saveSearchHistory(val);
-              },
-              decoration: InputDecoration(
-                suffixIcon: const Icon(Icons.search),
-                labelText: 'Search or Type Web Address',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
+            Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: TextField(
+                onSubmitted: (val) {
+                  providerR.textOnSubmitted(val);
+                  providerR.saveSearchHistory(val);
+                },
+                decoration: InputDecoration(
+                  suffixIcon: const Icon(Icons.search),
+                  labelText: 'Search or Type Web Address',
+                  labelStyle: TextStyle(color: Colors.grey),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25),
+                    borderSide: BorderSide(
+                      color: providerW.isDark ? Colors.white : Colors.blue,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(25),
+                    borderSide: BorderSide(
+                      color:
+                          providerW.isDark ? Colors.white : Colors.blueAccent,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

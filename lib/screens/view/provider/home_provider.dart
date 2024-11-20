@@ -3,26 +3,33 @@ import 'package:browser_mirror_wall_app/shr/shr_helper.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class HomeProvider with ChangeNotifier {
-  List<String> searchHistory = [];
-  final ShrHelper shrHelper = ShrHelper();
   HomeProvider() {
     getThemeMode();
+    getBookmark();
   }
 
+  List<String> searchHistory = [];
+  final ShrHelper shrHelper = ShrHelper();
   bool canBack = false;
   bool canForward = false;
-  PullToRefreshController pullToRefreshController = PullToRefreshController();
-
   String googleURL = 'https://www.google.co.in/';
   String webURL = '';
   bool isDark = false;
   ThemeMode themeMode = ThemeMode.light;
-
   late InAppWebViewController webViewController;
-
   String groupValue = 'Google';
+  List<String> bookmark = [];
 
-  List<String> bookmarkList = [];
+  void saveBookmark(String value) async {
+    bookmark.add(value);
+    shrHelper.setBookmark(bookmark);
+    notifyListeners();
+  }
+
+  void getBookmark() async {
+    bookmark = await shrHelper.getBookmark();
+    notifyListeners();
+  }
 
   changeThemeMode(bool value) async {
     isDark = value;
@@ -52,21 +59,6 @@ class HomeProvider with ChangeNotifier {
     await shrHelper.clearSearchHistory();
     searchHistory.clear();
     notifyListeners();
-  }
-
-  Future<void> loadBookmarks() async {
-    bookmarkList = await ShrHelper.getBookmarks();
-    notifyListeners(); // notify listeners after loading bookmarks
-  }
-
-  Future<void> addBookmark(String url) async {
-    await ShrHelper.addBookmark(url);
-    await loadBookmarks(); // reload bookmarks after adding
-  }
-
-  Future<void> removeBookmark(String url) async {
-    await ShrHelper.removeBookmark(url);
-    await loadBookmarks(); // reload bookmarks after removing
   }
 
   void chromeWeb({required String val}) {
@@ -113,10 +105,6 @@ class HomeProvider with ChangeNotifier {
   void searchEngine(String val) {
     groupValue = val;
     notifyListeners();
-  }
-
-  void googlePullToRefresh() {
-    pullToRefreshController.endRefreshing();
   }
 
   void textOnSubmitted(String val) {
