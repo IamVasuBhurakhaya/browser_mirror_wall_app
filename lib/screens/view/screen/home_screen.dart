@@ -1,16 +1,22 @@
 import 'package:browser_mirror_wall_app/screens/view/provider/home_provider.dart';
+import 'package:browser_mirror_wall_app/shr/shr_helper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:provider/provider.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<HomeProvider>(context);
-    final nonProvider = Provider.of<HomeProvider>(context, listen: false);
+    HomeProvider providerR = context.read<HomeProvider>();
+    HomeProvider providerW = context.watch<HomeProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -24,6 +30,7 @@ class HomePage extends StatelessWidget {
         actions: [
           PopupMenuButton(
             itemBuilder: (context) => [
+              // Search History Item
               PopupMenuItem(
                 onTap: () {
                   showModalBottomSheet(
@@ -42,20 +49,21 @@ class HomePage extends StatelessWidget {
                               const SizedBox(height: 10),
                               Expanded(
                                 child: ListView.builder(
-                                  itemCount: provider.searchHistory.length,
+                                  itemCount: providerW.searchHistory.length,
                                   itemBuilder: (context, index) {
                                     return ListTile(
-                                      title: Text(provider.searchHistory.isEmpty
-                                          ? 'No History'
-                                          : provider.searchHistory[index]),
+                                      title: Text(
+                                          providerW.searchHistory.isEmpty
+                                              ? 'No History'
+                                              : providerW.searchHistory[index]),
                                     );
                                   },
                                 ),
                               ),
-                              if (provider.searchHistory.isNotEmpty)
+                              if (providerW.searchHistory.isNotEmpty)
                                 ElevatedButton(
                                   onPressed: () {
-                                    nonProvider.clearSearchHistory();
+                                    providerR.clearSearchHistory();
                                     Navigator.pop(context); // Close the modal
                                   },
                                   child: const Text('Clear History'),
@@ -75,25 +83,42 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
+              // Bookmarks Item
               PopupMenuItem(
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
                     builder: (context) => Consumer<HomeProvider>(
                       builder: (context, provider, child) {
-                        return ListView.builder(
-                          itemCount: provider.bookmarkList.length,
-                          itemBuilder: (context, index) {
-                            final bookmark = provider.bookmarkList[index];
-                            return ListTile(
-                              title: Text(bookmark),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () =>
-                                    provider.removeBookmark(bookmark),
+                        return Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Bookmarks',
+                                style: TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.bold),
                               ),
-                            );
-                          },
+                              const SizedBox(height: 10),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: providerW.bookmarkList.length,
+                                  itemBuilder: (context, index) {
+                                    final bookmark =
+                                        providerW.bookmarkList[index];
+                                    return ListTile(
+                                      title: Text(bookmark),
+                                      trailing: IconButton(
+                                        icon: const Icon(Icons.delete),
+                                        onPressed: () =>
+                                            providerR.removeBookmark(bookmark),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
@@ -107,6 +132,7 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
+              // Search Engine Item
               PopupMenuItem(
                 onTap: () {
                   showDialog(
@@ -117,10 +143,10 @@ class HomePage extends StatelessWidget {
                         RadioListTile(
                           title: const Text('Google'),
                           value: 'Google',
-                          groupValue: provider.groupValue,
+                          groupValue: providerW.groupValue,
                           onChanged: (val) {
-                            nonProvider.searchEngine(val!);
-                            nonProvider.chromeWeb(
+                            providerR.searchEngine(val!);
+                            providerR.chromeWeb(
                                 val: 'https://www.google.co.in/');
                             Navigator.pop(context);
                           },
@@ -128,32 +154,30 @@ class HomePage extends StatelessWidget {
                         RadioListTile(
                           title: const Text('Yahoo'),
                           value: 'Yahoo',
-                          groupValue: provider.groupValue,
+                          groupValue: providerW.groupValue,
                           onChanged: (val) {
-                            nonProvider.searchEngine(val!);
-                            nonProvider.chromeWeb(
-                                val: 'https://www.yahoo.com/');
+                            providerR.searchEngine(val!);
+                            providerR.chromeWeb(val: 'https://www.yahoo.com/');
                             Navigator.pop(context);
                           },
                         ),
                         RadioListTile(
                           title: const Text('Bing'),
                           value: 'Bing',
-                          groupValue: provider.groupValue,
+                          groupValue: providerW.groupValue,
                           onChanged: (val) {
-                            nonProvider.searchEngine(val!);
-                            nonProvider.chromeWeb(val: 'https://www.bing.com/');
+                            providerR.searchEngine(val!);
+                            providerR.chromeWeb(val: 'https://www.bing.com/');
                             Navigator.pop(context);
                           },
                         ),
                         RadioListTile(
                           title: const Text('Duck Duck Go'),
                           value: 'Duck Duck Go',
-                          groupValue: provider.groupValue,
+                          groupValue: providerW.groupValue,
                           onChanged: (val) {
-                            nonProvider.searchEngine(val!);
-                            nonProvider.chromeWeb(
-                                val: 'https://duckduckgo.com/');
+                            providerR.searchEngine(val!);
+                            providerR.chromeWeb(val: 'https://duckduckgo.com/');
                             Navigator.pop(context);
                           },
                         ),
@@ -176,17 +200,25 @@ class HomePage extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // WebView displaying the webpage
           Expanded(
             flex: 8,
             child: InAppWebView(
-              onWebViewCreated: provider.onWebViewCreated,
+              pullToRefreshController:
+                  providerW.pullToRefreshController, // Attach it here
+              onWebViewCreated: providerR.onWebViewCreated,
               initialUrlRequest:
-                  URLRequest(url: WebUri.uri(Uri.parse(provider.googleURL))),
+                  URLRequest(url: WebUri.uri(Uri.parse(providerW.googleURL))),
               onLoadStop: (controller, uri) {
-                provider.onLoadStop(controller, uri);
+                providerR.onLoadStop(controller, uri);
+                providerW.pullToRefreshController.endRefreshing();
               },
+              // onLoadStart: (controller, uri) {
+              //   providerW.pullToRefreshController?.beginRefreshing();
+              // },
             ),
           ),
+          // Navigation Controls (Back, Forward, Reload)
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -194,25 +226,32 @@ class HomePage extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: provider.canBack ? provider.back : null,
+                  onPressed: providerW.canBack ? providerR.back : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.arrow_forward),
-                  onPressed: provider.canForward ? provider.forward : null,
+                  onPressed: providerW.canForward ? providerR.forward : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  onPressed: provider.reload,
+                  onPressed: providerR.reload,
+                ),
+                IconButton(
+                  onPressed: () {
+                    providerR.addBookmark(providerW.googleURL);
+                  },
+                  icon: const Icon(Icons.bookmark),
                 ),
               ],
             ),
           ),
+          // URL input field
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
               onSubmitted: (val) {
-                nonProvider.textOnSubmitted(val);
-                nonProvider.saveSearchHistory(val);
+                providerR.textOnSubmitted(val);
+                providerR.saveSearchHistory(val);
               },
               decoration: InputDecoration(
                 suffixIcon: const Icon(Icons.search),
@@ -221,15 +260,6 @@ class HomePage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () {
-                nonProvider.addBookmark(provider.googleURL);
-              },
-              child: const Text('Bookmark This Page'),
             ),
           ),
         ],

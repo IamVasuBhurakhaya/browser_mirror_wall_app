@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:browser_mirror_wall_app/shr/shr_helper.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-class HomeProvider extends ChangeNotifier {
+class HomeProvider with ChangeNotifier {
   List<String> searchHistory = [];
   final ShrHelper shrHelper = ShrHelper();
 
   bool canBack = false;
   bool canForward = false;
+  PullToRefreshController pullToRefreshController = PullToRefreshController();
+
   String googleURL = 'https://www.google.co.in/';
   String webURL = '';
 
@@ -36,17 +38,17 @@ class HomeProvider extends ChangeNotifier {
 
   Future<void> loadBookmarks() async {
     bookmarkList = await ShrHelper.getBookmarks();
-    notifyListeners();
+    notifyListeners(); // notify listeners after loading bookmarks
   }
 
   Future<void> addBookmark(String url) async {
     await ShrHelper.addBookmark(url);
-    loadBookmarks();
+    await loadBookmarks(); // reload bookmarks after adding
   }
 
   Future<void> removeBookmark(String url) async {
     await ShrHelper.removeBookmark(url);
-    loadBookmarks();
+    await loadBookmarks(); // reload bookmarks after removing
   }
 
   void chromeWeb({required String val}) {
@@ -93,6 +95,10 @@ class HomeProvider extends ChangeNotifier {
   void searchEngine(String val) {
     groupValue = val;
     notifyListeners();
+  }
+
+  void googlePullToRefresh() {
+    pullToRefreshController.endRefreshing();
   }
 
   void textOnSubmitted(String val) {
