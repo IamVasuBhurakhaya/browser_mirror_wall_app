@@ -57,7 +57,7 @@ class HomePageState extends State<HomePage> {
           Switch(
             value: providerW.isDark,
             onChanged: (value) {
-              providerR.changeThemeMode(value);
+              providerR.setThemeMode(value);
             },
             activeColor: Colors.amber,
             inactiveThumbColor: Colors.lightGreen,
@@ -120,7 +120,7 @@ class HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Icon(Icons.timer_sharp, color: Colors.grey[600]),
-                    Text('Search History'),
+                    const Text('Search History'),
                   ],
                 ),
               ),
@@ -137,7 +137,9 @@ class HomePageState extends State<HomePage> {
                               const Text(
                                 'Bookmarks',
                                 style: TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.bold),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 10),
                               Expanded(
@@ -169,7 +171,7 @@ class HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Icon(CupertinoIcons.bookmark_fill, color: Colors.grey[600]),
-                    Text('All Bookmarks'),
+                    const Text('All Bookmarks'),
                   ],
                 ),
               ),
@@ -230,7 +232,7 @@ class HomePageState extends State<HomePage> {
                   children: [
                     Icon(Icons.screen_search_desktop_outlined,
                         color: Colors.grey[600]),
-                    Text('Search Engine'),
+                    const Text('Search Engine'),
                   ],
                 ),
               ),
@@ -289,7 +291,7 @@ class HomePageState extends State<HomePage> {
                       String? currentUrl =
                           await webViewController?.getUrl().toString();
                       if (currentUrl != null) {
-                        providerR.saveBookmark(currentUrl);
+                        providerR.setBookmark(currentUrl);
                       }
                     },
                     icon: const Icon(
@@ -305,12 +307,12 @@ class HomePageState extends State<HomePage> {
               child: TextField(
                 onSubmitted: (val) {
                   providerR.textOnSubmitted(val);
-                  providerR.saveSearchHistory(val);
+                  providerR.setSearchHistory(val);
                 },
                 decoration: InputDecoration(
                   suffixIcon: const Icon(Icons.search),
                   labelText: 'Search or Type Web Address',
-                  labelStyle: TextStyle(color: Colors.grey),
+                  labelStyle: const TextStyle(color: Colors.grey),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25),
                     borderSide: BorderSide(

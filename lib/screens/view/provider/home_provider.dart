@@ -20,7 +20,7 @@ class HomeProvider with ChangeNotifier {
   String groupValue = 'Google';
   List<String> bookmark = [];
 
-  void saveBookmark(String value) async {
+  void setBookmark(String value) async {
     bookmark.add(value);
     shrHelper.setBookmark(bookmark);
     notifyListeners();
@@ -31,7 +31,7 @@ class HomeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  changeThemeMode(bool value) async {
+  void setThemeMode(bool value) async {
     isDark = value;
     themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
     shrHelper.setThemeMode(isDark);
@@ -44,7 +44,7 @@ class HomeProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void saveSearchHistory(String value) async {
+  void setSearchHistory(String value) async {
     searchHistory.add(value);
     await shrHelper.setSearchHistory(searchHistory);
     notifyListeners();
