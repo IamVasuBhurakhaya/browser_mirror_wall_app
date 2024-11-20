@@ -5,6 +5,9 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 class HomeProvider with ChangeNotifier {
   List<String> searchHistory = [];
   final ShrHelper shrHelper = ShrHelper();
+  HomeProvider() {
+    getThemeMode();
+  }
 
   bool canBack = false;
   bool canForward = false;
@@ -12,12 +15,27 @@ class HomeProvider with ChangeNotifier {
 
   String googleURL = 'https://www.google.co.in/';
   String webURL = '';
+  bool isDark = false;
+  ThemeMode themeMode = ThemeMode.light;
 
   late InAppWebViewController webViewController;
 
   String groupValue = 'Google';
 
   List<String> bookmarkList = [];
+
+  changeThemeMode(bool value) async {
+    isDark = value;
+    themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    shrHelper.setThemeMode(isDark);
+    notifyListeners();
+  }
+
+  void getThemeMode() async {
+    isDark = await shrHelper.getThemeMode();
+    themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
 
   void saveSearchHistory(String value) async {
     searchHistory.add(value);

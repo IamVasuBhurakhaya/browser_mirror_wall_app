@@ -14,16 +14,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(
-          value: HomeProvider(),
-        ),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        routes: MyRoutes.routes,
-      ),
+    return Consumer(
+      builder: (BuildContext context, value, Widget? child) {
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: HomeProvider()),
+          ],
+          child: Consumer<HomeProvider>(
+            builder: (BuildContext context, value, Widget? child) {
+              value.getThemeMode();
+              return MaterialApp(
+                theme: value.isDark ? ThemeData.dark() : ThemeData.light(),
+                // themeMode: ThemeMode.dark,
+                debugShowCheckedModeBanner: false,
+                routes: MyRoutes.routes,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

@@ -13,6 +13,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  InAppWebViewController? webViewController;
+
   @override
   Widget build(BuildContext context) {
     HomeProvider providerR = context.read<HomeProvider>();
@@ -23,14 +25,17 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         title: const Text(
           'My Browser',
-          style: TextStyle(
-            color: Colors.black45,
-          ),
         ),
         actions: [
+          Switch(
+            value: providerW.isDark,
+            onChanged: (value) {
+              webViewController?.setSettings(settings: InAppWebViewSettings());
+              providerR.changeThemeMode(value);
+            },
+          ),
           PopupMenuButton(
             itemBuilder: (context) => [
-              // Search History Item
               PopupMenuItem(
                 onTap: () {
                   showModalBottomSheet(
@@ -83,7 +88,6 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              // Bookmarks Item
               PopupMenuItem(
                 onTap: () {
                   showModalBottomSheet(
